@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Text, DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -15,8 +15,8 @@ class Note(Base):
         Text, nullable=False
     )
 
-    ticket_id: Mapped[int] = mapped_column(
-        ForeignKey("tickets.id"), nullable=False
+    order_id: Mapped[int] = mapped_column(
+        ForeignKey("orders.id"), nullable=False
     )
 
     user_id: Mapped[int] = mapped_column(
@@ -29,4 +29,16 @@ class Note(Base):
     )
 
     user = relationship("User")
-    ticket = relationship("Ticket")
+    order = relationship("Order", foreign_keys=[order_id])
+
+    @property
+    def ticket_id(self) -> int:
+        return self.order_id
+
+    @ticket_id.setter
+    def ticket_id(self, value: int) -> None:
+        self.order_id = value
+
+    @property
+    def ticket(self):
+        return self.order

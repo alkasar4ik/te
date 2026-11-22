@@ -1,4 +1,3 @@
-
 from datetime import datetime, timezone
 
 from sqlalchemy import String, Text, DateTime, ForeignKey
@@ -7,22 +6,21 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
-class TicketStatus:
-    OPEN = "open"
-    IN_PROGRESS = "in_progress"
-    RESOLVED = "resolved"
+class OrderStatus:
+    PENDING = "pending"
+    ACCEPTED = "accepted"
     CLOSED = "closed"
 
 
-class TicketPriority:
+class OrderPriority:
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
 
 
-class Ticket(Base):
-    __tablename__ = "tickets"
+class Order(Base):
+    __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
@@ -36,13 +34,13 @@ class Ticket(Base):
 
     status: Mapped[str] = mapped_column(
         String(25),
-        default=TicketStatus.OPEN,
+        default=OrderStatus.PENDING,
         nullable=False
     )
 
     priority: Mapped[str] = mapped_column(
         String(25),
-        default=TicketPriority.MEDIUM,
+        default=OrderPriority.MEDIUM,
         nullable=False
     )
 

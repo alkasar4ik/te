@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import User  # переконайся, що User є в app/models
+from app.models.users import User, UserRole
 
 router = APIRouter(prefix="/users", tags=["users"])
 
