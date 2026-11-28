@@ -1,28 +1,80 @@
 
 {% extends "base.html" %}
 
-{% block title %}Заявки{% endblock %}
+{% block title %}Заявки | ServiceDesk Plus{% endblock %}
 
 {% block content %}
 
 <div class="container">
+
     <h2>Список заявок</h2>
 
-    <a href="/orders/create" class="btn">Создать заявку</a>
+    {% if current_user.role == "client" %}
+        <a href="/orders/create" class="btn">Створити заявку</a>
+    {% endif %}
 
     {% for order in orders %}
+
         <div class="order">
+
             <h3>{{ order.title }}</h3>
 
             <p>{{ order.description }}</p>
 
-            <p>Статус: {{ order.status }}</p>
+            <p>
+                Статус:
+                {% if order.status == "pending" %}
+                    Очікує розгляду
+                {% elif order.status == "accepted" %}
+                    Прийнята
+                {% elif order.status == "rejected" %}
+                    Відхилена
+                {% elif order.status == "closed" %}
+                    Закрита
+                {% endif %}
+            </p>
 
-            <a href="/orders/{{ order.id }}">Подробнее</a>
+            <p>
+                Пріоритет:
+                {% if order.priority == "low" %}
+                    Низький
+                {% elif order.priority == "medium" %}
+                    Середній
+                {% elif order.priority == "high" %}
+                    Високий
+                {% elif order.priority == "urgent" %}
+                    Терміновий
+                {% endif %}
+            </p>
+
+            <a href="/orders/{{ order.id }}" class="btn">
+                Детальніше
+            </a>
+
+            {% if current_user.role == "master" or current_user.role == "admin" %}
+
+                {% if order.status == "pending" %}
+
+                    <form method="post" action="/orders/{{ order.id }}/accept">
+                        <button type="submit">Прийняти</button>
+                    </form>
+
+                    <form method="post" action="/orders/{{ order.id }}/reject">
+                        <button type="submit">Відхилити</button>
+                    </form>
+
+                {% endif %}
+
+            {% endif %}
+
         </div>
+
     {% else %}
-        <p>Заявок пока нет.</p>
+
+        <p>Заявок поки немає.</p>
+
     {% endfor %}
+
 </div>
 
 {% endblock %}

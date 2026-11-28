@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,11 +38,13 @@
         nav {
             display: flex;
             gap: 20px;
+            flex-wrap: wrap;
         }
 
         nav a {
             color: white;
             text-decoration: none;
+            transition: 0.2s;
         }
 
         nav a:hover {
@@ -102,22 +104,51 @@
             margin-bottom: 15px;
         }
 
-        
+        .success {
+            color: #4ade80;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 700px) {
+            header {
+                flex-direction: column;
+                gap: 18px;
+                padding: 20px;
+            }
+
+            nav {
+                justify-content: center;
+            }
+
+            main {
+                margin: 15px auto;
+            }
+        }
     </style>
 </head>
 
 <body>
 
-
 <header>
     <h1>ServiceDesk Plus</h1>
 
     <nav>
-        {% if request.session.get("user_id") %}
+        {% if current_user is defined and current_user %}
 
             <a href="/orders/">Заявки</a>
-            <a href="/orders/create">Створити заявку</a>
-            <a href="/orders/accepted">Прийняті заявки</a>
+
+            {% if current_user.role == "client" %}
+                <a href="/orders/create">Створити заявку</a>
+            {% endif %}
+
+            {% if current_user.role == "master" or current_user.role == "admin" %}
+                <a href="/orders/accepted">Прийняті заявки</a>
+            {% endif %}
+
+            {% if current_user.role == "admin" %}
+                <a href="/admin/users">Користувачі</a>
+            {% endif %}
+
             <a href="/users/logout">Вийти</a>
 
         {% else %}
@@ -128,7 +159,6 @@
         {% endif %}
     </nav>
 </header>
-
 
 <main>
     {% block content %}{% endblock %}

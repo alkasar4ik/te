@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Depends, Form, Request, status
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, or_
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from pwdlib import PasswordHash
 
 from app.database import get_db
-from app.models.users import User
+from app.models.users import User, UserRole
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -15,11 +15,12 @@ templates = Jinja2Templates(directory="app/templates")
 
 password_hash = PasswordHash.recommended()
 
+ADMIN_EMAIL = "pavlovskyi.romaha@gmail.com"
+
 
 @router.get("/health")
 def users_health_check():
     return {"message": "working"}
-
 
 
 @router.get("/register")
@@ -27,7 +28,10 @@ def register_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="register.html",
-        context={"error": None}
+        context={
+            "error": None,
+            "current_user": None
+        }
     )
 
 
@@ -49,7 +53,10 @@ def register_submit(
         return templates.TemplateResponse(
             request=request,
             name="register.html",
-            context={"error": "Пароли не совпадают"},
+            context={
+                "error": "Паролі не збігаються",
+                "current_user": None
+            },
             status_code=400
         )
 
@@ -57,7 +64,10 @@ def register_submit(
         return templates.TemplateResponse(
             request=request,
             name="register.html",
-            context={"error": "Пароль должен содержать минимум 8 символов"},
+            context={
+                "error": "Пароль повинен містити мінімум 8 символів",
+                "current_user": None
+            },
             status_code=400
         )
 
@@ -74,25 +84,33 @@ def register_submit(
         return templates.TemplateResponse(
             request=request,
             name="register.html",
-            context={"error": "Email или телефон уже используется"},
+            context={
+                "error": "Email або телефон вже використовується",
+                "current_user": None
+            },
             status_code=400
         )
+
+    if email == ADMIN_EMAIL:
+        role = UserRole.ADMIN
+    else:
+        role = UserRole.CLIENT
 
     new_user = User(
         full_name=full_name,
         email=email,
         phone=phone,
-        hashed_password=password_hash.hash(password)
+        hashed_password=password_hash.hash(password),
+        role=role
     )
 
     db.add(new_user)
     db.commit()
 
     return RedirectResponse(
-        url="/login",
+        url="/users/login",
         status_code=303
     )
-
 
 
 @router.get("/login")
@@ -100,7 +118,10 @@ def login_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"error": None}
+        context={
+            "error": None,
+            "current_user": None
+        }
     )
 
 
@@ -124,7 +145,10 @@ def login_submit(
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={"error": "Неверный email или пароль"},
+            context={
+                "error": "Неправильний email або пароль",
+                "current_user": None
+            },
             status_code=401
         )
 
@@ -132,7 +156,10 @@ def login_submit(
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={"error": "Аккаунт заблокирован"},
+            context={
+                "error": "Акаунт заблокований",
+                "current_user": None
+            },
             status_code=403
         )
 
@@ -145,12 +172,11 @@ def login_submit(
     )
 
 
-
 @router.get("/logout")
 def logout(request: Request):
     request.session.clear()
 
     return RedirectResponse(
-        url="/login",
+        url="/users/login",
         status_code=303
     )
