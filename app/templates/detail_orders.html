@@ -1,34 +1,37 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <title>Замовлення #{{ order.id }}</title>
-</head>
-<body>
-    <h1>Замовлення #{{ order.id }}: {{ order.title }}</h1>
-    
-    <p><strong>Статус:</strong> {{ order.status }}</p>
-    <p><strong>Опис:</strong></p>
-    <p>{{ order.description }}</p>
 
-    <hr>
+{% extends "base.html" %}
 
-    <!-- Кнопка прийняття, якщо статус pending -->
-    {% if order.status == 'pending' %}
-        <form action="/orders/{{ order.id }}/accept" method="post" style="display:inline;">
-            <button type="submit">Прийняти замовлення</button>
-        </form>
+{% block title %}Детали заявки{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    {% if order %}
+        <h2>{{ order.title }}</h2>
+
+        <p>{{ order.description }}</p>
+
+        <p>Статус: {{ order.status }}</p>
+
+        {% if order.status == "pending" %}
+            <form action="/orders/{{ order.id }}/accept" method="post">
+                <button type="submit">Принять заявку</button>
+            </form>
+        {% endif %}
+
+        {% if order.status != "closed" %}
+            <form action="/orders/{{ order.id }}/close" method="post">
+                <button type="submit">Закрыть заявку</button>
+            </form>
+        {% endif %}
+
+        <a href="/orders/">Назад к заявкам</a>
+    {% else %}
+        <h2>Заявка не найдена</h2>
+        <a href="/orders/">Назад</a>
     {% endif %}
 
-    <!-- Кнопка закриття, якщо статус accepted -->
-    {% if order.status == 'accepted' %}
-        <form action="/orders/{{ order.id }}/close" method="post" style="display:inline;">
-            <button type="submit">Закрити замовлення</button>
-        </form>
-    {% endif %}
+</div>
 
-    <br><br>
-    <a href="/orders/">До списку нових</a> | 
-    <a href="/orders/accepted">До списку прийнятих</a>
-</body>
-</html>
+{% endblock %}

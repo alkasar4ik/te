@@ -1,31 +1,28 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title }}</title>
-</head>
-<body>
-    <nav>
-        <a href="/orders/">Очікують (Pending)</a> |
-        <a href="/orders/accepted">Прийняті (Accepted)</a> |
-        <a href="/orders/create">Створити замовлення</a>
-    </nav>
-    <hr>
 
-    <h1>{{ title }}</h1>
+{% extends "base.html" %}
 
-    {% if orders %}
-        <ul>
-        {% for order in orders %}
-            <li>
-                <strong>#{{ order.id }} — {{ order.title }}</strong> 
-                (Статус: {{ order.status }})
-                <a href="/orders/{{ order.id }}">Детальніше</a>
-            </li>
-        {% endfor %}
-        </ul>
+{% block title %}Заявки{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <h2>Список заявок</h2>
+
+    <a href="/orders/create" class="btn">Создать заявку</a>
+
+    {% for order in orders %}
+        <div class="order">
+            <h3>{{ order.title }}</h3>
+
+            <p>{{ order.description }}</p>
+
+            <p>Статус: {{ order.status }}</p>
+
+            <a href="/orders/{{ order.id }}">Подробнее</a>
+        </div>
     {% else %}
-        <p>Замовлень у цій категорії поки немає.</p>
-    {% endif %}
-</body>
-</html>
+        <p>Заявок пока нет.</p>
+    {% endfor %}
+</div>
+
+{% endblock %}

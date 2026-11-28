@@ -1,27 +1,22 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <title>Створити замовлення</title>
-</head>
-<body>
-    <h1>Нове замовлення</h1>
-    
+
+{% extends "base.html" %}
+
+{% block title %}Создание заявки{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <h2>Создать заявку</h2>
+
     <form action="/orders/create" method="post">
-        <div>
-            <label for="title">Назва замовлення / проблема:</label><br>
-            <input type="text" id="title" name="title" required>
-        </div>
-        <br>
-        <div>
-            <label for="description">Детальний опис:</label><br>
-            <textarea id="description" name="description" rows="4" required></textarea>
-        </div>
-        <br>
-        <button type="submit">Відправити замовлення</button>
+        <input type="text" name="title" placeholder="Название заявки" required>
+
+        <textarea name="description" placeholder="Описание заявки" rows="5"></textarea>
+
+        <button type="submit">Создать</button>
     </form>
-    
-    <br>
-    <a href="/orders/">Назад до списку</a>
-</body>
-</html>
+
+    <a href="/orders/">Назад к заявкам</a>
+</div>
+
+{% endblock %}

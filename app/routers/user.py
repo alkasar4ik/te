@@ -1,20 +1,19 @@
-import hashlib
+
 from fastapi import APIRouter, Depends, Form, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
+from pwdlib import PasswordHash
 
 from app.database import get_db
-from app.models.users import User, UserRole
+from app.models.users import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="app/templates")
 
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+password_hash = PasswordHash.recommended()
 
 
 @router.get("/health")
@@ -22,103 +21,136 @@ def users_health_check():
     return {"message": "working"}
 
 
-@router.get("/register", response_class=HTMLResponse)
+
+@router.get("/register")
 def register_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="register.html",
-        context={
-            "title": "Register",
-            "error": None,
-        },
+        context={"error": None}
     )
 
 
-@router.post("/register", response_class=HTMLResponse)
+@router.post("/register")
 def register_submit(
     request: Request,
-    username: str = Form(...),
+    full_name: str = Form(...),
     email: str = Form(...),
+    phone: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db)
 ):
-    username = username.strip()
+    full_name = full_name.strip()
     email = email.strip().lower()
+    phone = phone.strip()
+
+    if password != confirm_password:
+        return templates.TemplateResponse(
+            request=request,
+            name="register.html",
+            context={"error": "Пароли не совпадают"},
+            status_code=400
+        )
+
+    if len(password) < 8:
+        return templates.TemplateResponse(
+            request=request,
+            name="register.html",
+            context={"error": "Пароль должен содержать минимум 8 символов"},
+            status_code=400
+        )
 
     existing_user = db.scalars(
-        select(User).where((User.username == username) | (User.email == email))
+        select(User).where(
+            or_(
+                User.email == email,
+                User.phone == phone
+            )
+        )
     ).first()
 
     if existing_user:
         return templates.TemplateResponse(
             request=request,
             name="register.html",
-            context={
-                "title": "Register",
-                "error": "Користувач з таким логіном або email уже існує",
-            },
-            status_code=status.HTTP_400_BAD_REQUEST,
+            context={"error": "Email или телефон уже используется"},
+            status_code=400
         )
 
     new_user = User(
-        username=username,
+        full_name=full_name,
         email=email,
-        hashed_password=hash_password(password),
+        phone=phone,
+        hashed_password=password_hash.hash(password)
     )
+
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
 
-    return RedirectResponse(url="/users/login", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(
+        url="/login",
+        status_code=303
+    )
 
 
-@router.get("/login", response_class=HTMLResponse)
+
+@router.get("/login")
 def login_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={
-            "title": "Login",
-            "error": None,
-        },
+        context={"error": None}
     )
 
 
-@router.post("/login", response_class=HTMLResponse)
+@router.post("/login")
 def login_submit(
     request: Request,
-    login: str = Form(...),
+    email: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    login_value = login.strip()
-    password_hash = hash_password(password)
+    email = email.strip().lower()
 
     user = db.scalars(
-        select(User).where(
-            ((User.username == login_value) | (User.email == login_value.lower()))
-            & (User.hashed_password == password_hash)
-        )
+        select(User).where(User.email == email)
     ).first()
 
-    if not user:
+    if not user or not password_hash.verify(
+        password,
+        user.hashed_password
+    ):
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={
-                "title": "Login",
-                "error": "Невірний логін/email або пароль",
-            },
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            context={"error": "Неверный email или пароль"},
+            status_code=401
         )
 
-    response = RedirectResponse(url="/orders/", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(key="user_id", value=str(user.id), httponly=True)
-    return response
+    if not user.is_active:
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"error": "Аккаунт заблокирован"},
+            status_code=403
+        )
+
+    request.session.clear()
+    request.session["user_id"] = user.id
+
+    return RedirectResponse(
+        url="/orders/",
+        status_code=303
+    )
+
 
 
 @router.get("/logout")
-def logout():
-    response = RedirectResponse(url="/users/login", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie("user_id")
-    return response
+def logout(request: Request):
+    request.session.clear()
+
+    return RedirectResponse(
+        url="/login",
+        status_code=303
+    )

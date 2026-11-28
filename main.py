@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.database import init_db
 from app.routers import order, user
@@ -9,6 +10,11 @@ from app.routers import order, user
 init_db()
 
 app = FastAPI()
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="my-secret-key-for-servicedesk-project"
+)
 
 templates = Jinja2Templates(directory="app/templates")
 
